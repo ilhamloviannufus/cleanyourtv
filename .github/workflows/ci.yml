@@ -44,6 +44,10 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon testReleaseUnitTest lintRelease assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: launcher/app/build/outputs/apk/release/app-release.apk
       - name: The launcher stays small
         run: |
           size=$(stat -c %s launcher/app/build/outputs/apk/release/app-release.apk)

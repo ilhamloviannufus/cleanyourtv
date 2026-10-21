@@ -6,6 +6,17 @@ android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
 
+    // A fixed debug key, committed to the repo, so every build (local or CI) signs identically and
+    // installs over an existing one instead of Gradle's per-machine random ~/.android/debug.keystore.
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
     defaultConfig {
         // Opt-in identity for firmware with a package-name HOME allowlist; see docs/devices/xiaomi-mitv-aetp0-dofus.md.
         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')

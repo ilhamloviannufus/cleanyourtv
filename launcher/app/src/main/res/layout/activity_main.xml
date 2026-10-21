@@ -266,7 +266,7 @@
                             android:format12Hour="@string/date_format_home"
                             android:format24Hour="@string/date_format_home"
                             android:textColor="#A6FFFFFF"
-                            android:textSize="14sp"
+                            android:textSize="18sp"
                             android:fontFamily="@font/outfit_regular"
                             android:letterSpacing="0.14"
                             android:textAllCaps="true" />

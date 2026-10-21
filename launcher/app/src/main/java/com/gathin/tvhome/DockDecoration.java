@@ -1,9 +1,11 @@
 package com.gathin.tvhome;
 
 import android.graphics.Canvas;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -29,10 +31,11 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         this.dockSize = dockSize;
         this.density = density;
         this.namesRoom = names ? 22 * density : 0;
-        band.setColor(translucent ? 0x8C121014 : 0xFF141416);
+        // Frosted-glass look: a light-to-dark vertical wash instead of a flat panel, so the wallpaper
+        // behind still reads through it, plus a bright rim to catch the eye like a glass edge.
         edge.setStyle(Paint.Style.STROKE);
         edge.setStrokeWidth(density);
-        edge.setColor(translucent ? 0x26FFFFFF : 0x1FFFFFFF);
+        edge.setColor(0x59FFFFFF);
     }
 
     @Override
@@ -75,6 +78,9 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         rect.inset(-side, -pad);
         rect.bottom += namesRoom;
         float radius = 26 * density;
+        // Light catching the top of the glass, fading to a darker, more transparent base.
+        band.setShader(new LinearGradient(0, rect.top, 0, rect.bottom,
+                0x40FFFFFF, 0x26000000, Shader.TileMode.CLAMP));
         c.drawRoundRect(rect, radius, radius, band);
         c.drawRoundRect(rect, radius, radius, edge);
     }

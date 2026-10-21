@@ -172,6 +172,16 @@
                 android:layout_marginEnd="16dp"
                 android:orientation="vertical">
 
+                <!-- A small round profile glyph above the greeting, where Google TV's own account photo sits. -->
+                <ImageView
+                    android:id="@+id/accountIcon"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_marginBottom="6dp"
+                    android:src="@drawable/ic_account"
+                    android:alpha="0.85"
+                    android:importantForAccessibility="no" />
+
                 <!-- The header texts use gravity left, not start: the launcher lays out left to right
                      (no supportsRtl), and with start a right-to-left script such as Arabic would move to the
                      right edge of these full-width lines instead of staying under the clock. -->

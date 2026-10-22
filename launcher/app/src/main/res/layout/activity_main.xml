@@ -380,6 +380,10 @@
                 <TextView
                     android:id="@+id/btnInputs"
                     style="@style/TopButton"
+                    android:background="@drawable/pill_candy_blue"
+                    android:textColor="#FFFFFFFF"
+                    android:drawableTint="#FFFFFFFF"
+                    android:fontFamily="@font/outfit_bold"
                     android:text="@string/inputs"
                     android:drawableStart="@drawable/ic_input"
                     android:nextFocusDown="@+id/grid" />
@@ -387,6 +391,10 @@
                 <TextView
                     android:id="@+id/btnWifi"
                     style="@style/TopButton"
+                    android:background="@drawable/pill_candy_green"
+                    android:textColor="#FFFFFFFF"
+                    android:drawableTint="#FFFFFFFF"
+                    android:fontFamily="@font/outfit_bold"
                     android:maxWidth="180dp"
                     android:singleLine="true"
                     android:ellipsize="end"
@@ -412,6 +420,10 @@
                 <TextView
                     android:id="@+id/btnSettings"
                     style="@style/TopButton"
+                    android:background="@drawable/pill_candy_red"
+                    android:textColor="#FFFFFFFF"
+                    android:drawableTint="#FFFFFFFF"
+                    android:fontFamily="@font/outfit_bold"
                     android:text="@string/settings"
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kids-style "candy" pill: a bright flat colour with a darker 4dp bevel along the bottom, like a
+     chunky mobile-game button. Reused per top-bar pill with its own colour (see pill_candy_green,
+     pill_candy_red); see their constructors in MainActivity for which button gets which. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#1D4ED8" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+            <item android:bottom="4dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="#60A5FA" />
+                    <stroke android:width="2dp" android:color="#FFFFFFFF" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#1D4ED8" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+            <item android:bottom="4dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="#3B82F6" />
+                    <corners android:radius="21dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

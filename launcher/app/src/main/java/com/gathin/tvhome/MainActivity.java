@@ -130,7 +130,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      *  is started for it, so a focus move costs nothing extra on a launcher that runs all day. */
     private boolean ambientGlow;
     private ImageView heroArt;
-    private static final float HERO_ART_ALPHA = 0.5f;
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -368,6 +367,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // still follows the dock.
         if (!cfg.dockTitle) hero.setVisibility(View.GONE);
         greeting = findViewById(R.id.greeting);
+        greeting.setVisibility(View.GONE);
         clockBlock = findViewById(R.id.leftBlock);
         greetingColor = greeting.getCurrentTextColor();
         btnWifi = findViewById(R.id.btnWifi);
@@ -1412,37 +1412,24 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     }
 
-    /** Swaps the backdrop to this app's artwork: fade out, swap, fade in, the way the shelf's name changes. */
+    /**
+     * Swaps the backdrop to this app's own photo (config.xml app_backgrounds), instantly, at full
+     * strength: no fade, no dimming. An app with no photo of its own keeps whatever backdrop is already
+     * showing, rather than falling back to a generic blurred icon.
+     */
     private void showHeroArt(int position) {
         String key = adapter.keyAt(position);
-        if (key == null) return;
+        if (key == null || key.equals(heroArtKey)) return;
         heroArt.animate().cancel();
-        if (key.equals(heroArtKey)) {
-            fadeHeroArt(420);
-            return;
-        }
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
             art = customBackdropAt(position);
-            if (art == null) art = HeroArt.from(adapter.artworkAt(position));
             if (art != null) heroArtCache.put(key, art);
         }
+        if (art == null) return;   // no photo for this app: leave the current backdrop showing
         heroArtKey = key;
-        final Bitmap next = art;
-        if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
-            heroArt.setImageBitmap(next);
-            fadeHeroArt(600);
-            return;
-        }
-        heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
-            heroArt.setImageBitmap(next);
-            heroArt.animate().alpha(HERO_ART_ALPHA).setDuration(420).start();
-        }).start();
-    }
-
-    private void fadeHeroArt(int ms) {
-        if (!animations) heroArt.setAlpha(HERO_ART_ALPHA);
-        else heroArt.animate().alpha(HERO_ART_ALPHA).setDuration(reducedMotion ? Math.min(ms, 160) : ms).start();
+        heroArt.setAlpha(1f);
+        heroArt.setImageBitmap(art);
     }
 
     /** "Last opened yesterday, 9:40 PM", the time in white; nothing (but the same height) when it was never seen. */

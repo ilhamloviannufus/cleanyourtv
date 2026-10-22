@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fredoka (subset to Latin + the punctuation the app uses), the kids-game "bubble" typeface used
+     everywhere now; kept under the old outfit filename so no layout had to change its font reference. -->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <font android:font="@font/fredoka" android:fontStyle="normal" android:fontWeight="700" />
+</font-family>

@@ -99,9 +99,9 @@
         android:id="@+id/leaguePanel"
         android:layout_width="260dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|right"
+        android:layout_gravity="right|bottom"
         android:layout_marginEnd="60dp"
-        android:layout_marginTop="120dp"
+        android:layout_marginBottom="54dp"
         android:background="@drawable/card_kids_purple"
         android:padding="12dp"
         android:gravity="right"
@@ -428,11 +428,14 @@
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
+        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells.
+             Indented from the end (mirrored): the dock and the grid below it sit in a narrower strip, leaving room
+             for leaguePanel below, at the same height as the dock. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:layout_marginEnd="300dp"
             android:layout_marginTop="10dp">
 
             <androidx.recyclerview.widget.RecyclerView

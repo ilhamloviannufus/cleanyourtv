@@ -96,16 +96,16 @@
 
     <!-- Next-match panel (LeagueMatch, config.xml league_team): a team's next fixture, its live score once
          it starts, and the table around its own rank. Fetched at most once every two hours; see
-         MainActivity. Sits in the gap between the header and the cinematic shelf's name/dock, so it never
-         covers either; its own kids-card background (card_kids_purple) keeps the text readable over
-         whatever the photo looks like there. -->
+         MainActivity. Bottom-left, level with the dock (now a narrower strip on the right, see the grid's
+         FrameLayout wrapper); its own kids-card background (card_kids_purple) keeps the text readable
+         over whatever the photo looks like there. -->
     <LinearLayout
         android:id="@+id/leaguePanel"
         android:layout_width="260dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|left"
+        android:layout_gravity="left|bottom"
         android:layout_marginStart="60dp"
-        android:layout_marginTop="120dp"
+        android:layout_marginBottom="54dp"
         android:background="@drawable/card_kids_purple"
         android:padding="12dp"
         android:orientation="vertical"
@@ -437,11 +437,14 @@
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
+        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells.
+             Indented from the start: the dock and the grid below it now sit in a narrower right-hand strip, leaving
+             room on the left for leaguePanel below, at the same height as the dock. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:layout_marginStart="300dp"
             android:layout_marginTop="10dp">
 
             <androidx.recyclerview.widget.RecyclerView

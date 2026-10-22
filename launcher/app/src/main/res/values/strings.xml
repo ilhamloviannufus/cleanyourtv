@@ -107,4 +107,11 @@
     <!-- Cinematic top shelf (cinematic_home): the line under the focused dock app's name; %1$s is when it was
          last opened, e.g. "5 minutes ago" or "yesterday, 9:40 pm". -->
     <string name="last_opened">Last opened %1$s</string>
+
+    <!-- Next-match panel (LeagueMatch, config.xml league_team). %1$s is the league name, e.g. "Liga 1". -->
+    <string name="league_kicker">%1$s · Next match</string>
+    <string name="league_kicker_live">%1$s · Live</string>
+    <string name="league_vs">%1$s vs %2$s</string>
+    <string name="league_score">%1$d–%2$d</string>
+    <string name="league_kickoff_in">Kicks off in %1$s</string>
 </resources>

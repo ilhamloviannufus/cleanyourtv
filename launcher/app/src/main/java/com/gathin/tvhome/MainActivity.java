@@ -154,6 +154,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private List<RaceWeekend.Race> raceCalendar;
     private View racePanel;
     private TextView raceKicker, raceHeadline, raceSessions;
+    /** config.xml league_team: a team name to show a next-match panel for, from TheSportsDB. Empty is off. */
+    private String leagueTeam;
+    private View leaguePanel;
+    private TextView leagueKicker, leagueHeadline, leagueSubline;
+    /** The most recent fetch, or null before the first one lands or when there is nothing upcoming. */
+    private LeagueMatch leagueMatch;
+    private final java.util.concurrent.ExecutorService leagueExecutor =
+            java.util.concurrent.Executors.newSingleThreadExecutor();
+    private boolean leagueFetchInFlight;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
     private boolean shamsi;
@@ -291,6 +300,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateRace();
+            updateLeaguePanel();
             updateWifiLabel();
             sky.update();
             wallpaperPlayer.update();
@@ -362,6 +372,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         raceKicker = findViewById(R.id.raceKicker);
         raceHeadline = findViewById(R.id.raceHeadline);
         raceSessions = findViewById(R.id.raceSessions);
+        leagueTeam = cfg.leagueTeam;
+        leaguePanel = findViewById(R.id.leaguePanel);
+        leagueKicker = findViewById(R.id.leagueKicker);
+        leagueHeadline = findViewById(R.id.leagueHeadline);
+        leagueSubline = findViewById(R.id.leagueSubline);
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -658,6 +673,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         rebuildOnResume = false;
         updateGreeting();
         updateRace();
+        refreshLeague();
         // The network and Inputs pills keep their state while Home is in the background, and callbacks update them
         // when the network or the inputs change, so this refresh only catches anything missed. Its binder calls
         // (about 7 ms on a TCL C755, most of it WifiManager.getConnectionInfo) would hold up the first frame back
@@ -848,6 +864,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onDestroy() {
         super.onDestroy();
         wallpaperPlayer.close();
+        leagueExecutor.shutdownNow();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         TvInputManager tim = (TvInputManager) getSystemService(TV_INPUT_SERVICE);
         if (tim != null) tim.unregisterCallback(inputCallback);
@@ -1985,6 +2002,97 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         raceSessions.setText(row);
         racePanel.setVisibility(View.VISIBLE);
+    }
+
+    // ---- next-match panel (LeagueMatch, config.xml league_team) ----------------------------------
+
+    private static final long LEAGUE_REFRESH_MS = 2 * 60 * 60 * 1000L;   // check at most every two hours
+    private static final String LEAGUE_PREFS = "league";
+    private static final String LEAGUE_API = "https://www.thesportsdb.com/api/v1/json/123/";
+
+    /** Shows the cached match (if any) right away, then fetches a fresh one if the cache is stale or missing. */
+    private void refreshLeague() {
+        if (leagueTeam.isEmpty()) return;
+        android.content.SharedPreferences prefs = getSharedPreferences(LEAGUE_PREFS, MODE_PRIVATE);
+        if (leagueMatch == null) {
+            String cached = prefs.getString("json:" + leagueTeam, null);
+            if (cached != null) leagueMatch = LeagueMatch.parseNext(cached);
+            updateLeaguePanel();
+        }
+        long last = prefs.getLong("fetched:" + leagueTeam, 0);
+        if (leagueFetchInFlight || System.currentTimeMillis() - last < LEAGUE_REFRESH_MS) return;
+        leagueFetchInFlight = true;
+        final String team = leagueTeam;
+        leagueExecutor.execute(() -> {
+            String json = fetchLeagueJson(prefs, team);
+            LeagueMatch match = json == null ? null : LeagueMatch.parseNext(json);
+            handler.post(() -> {
+                leagueFetchInFlight = false;
+                if (match != null) leagueMatch = match;
+                updateLeaguePanel();
+            });
+        });
+    }
+
+    /** Resolves (and caches) the team's id, then fetches its next events as raw JSON. Network thread only. */
+    private String fetchLeagueJson(android.content.SharedPreferences prefs, String team) {
+        try {
+            String id = prefs.getString("id:" + team, null);
+            if (id == null) {
+                String search = httpGet(LEAGUE_API + "searchteams.php?t=" + java.net.URLEncoder.encode(team, "UTF-8"));
+                id = search == null ? null : LeagueMatch.parseTeamId(search);
+                if (id == null) return null;
+                prefs.edit().putString("id:" + team, id).apply();
+            }
+            String events = httpGet(LEAGUE_API + "eventsnext.php?id=" + id);
+            if (events == null) return null;
+            prefs.edit().putString("json:" + team, events).putLong("fetched:" + team, System.currentTimeMillis()).apply();
+            return events;
+        } catch (Exception e) {
+            android.util.Log.w("TvHome.League", "fetch failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static String httpGet(String url) throws java.io.IOException {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(8000);
+        c.setReadTimeout(8000);
+        try {
+            if (c.getResponseCode() != 200) return null;
+            StringBuilder sb = new StringBuilder();
+            try (java.io.BufferedReader r = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(c.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = r.readLine()) != null) sb.append(line);
+            }
+            return sb.toString();
+        } finally {
+            c.disconnect();
+        }
+    }
+
+    /** Text only, like updateRace(): nothing animates, so this costs nothing between ticks. */
+    private void updateLeaguePanel() {
+        LeagueMatch m = leagueMatch;
+        if (m == null || m.finished()) {
+            leaguePanel.setVisibility(View.GONE);
+            return;
+        }
+        String league = m.league.isEmpty() ? leagueTeam : m.league;
+        leagueKicker.setText(m.live() ? getString(R.string.league_kicker_live, league)
+                : getString(R.string.league_kicker, league));
+        leagueHeadline.setText(getString(R.string.league_vs, m.homeTeam, m.awayTeam));
+        if (m.live() && m.homeScore != null && m.awayScore != null) {
+            SpannableString live = new SpannableString("●  " + getString(R.string.league_score, m.homeScore, m.awayScore));
+            live.setSpan(new android.text.style.ForegroundColorSpan(RACE_RED), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            leagueSubline.setText(live);
+        } else {
+            java.time.Duration until = java.time.Duration.between(java.time.Instant.now(), m.kickoff);
+            leagueSubline.setText(until.isNegative() ? m.venue
+                    : getString(R.string.league_kickoff_in, RaceWeekend.countdown(until)));
+        }
+        leaguePanel.setVisibility(View.VISIBLE);
     }
 
     private void refreshPillsAfterNextDraw() {

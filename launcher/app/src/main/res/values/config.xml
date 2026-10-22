@@ -191,6 +191,12 @@
          only background_color or the wallpaper behind everything. Can also be set with "ambient_glow": false in a
          theme's config.json. -->
     <bool name="ambient_glow">true</bool>
+    <!-- A team name to look up on TheSportsDB (thesportsdb.com, a free third-party API) and show as a
+         small "next match" panel: opponent, venue, kickoff countdown, and the live score once it starts.
+         Checked at most once every two hours, cached, and left off entirely while this is empty. Can also
+         be set with "league_team": "PSS Sleman" in a theme's config.json. -->
+    <string name="league_team" translatable="false"></string>
+
     <!-- Minutes Home may sit untouched before it shows the clock screensaver (ClockActivity); 0 turns it off.
          Unlike the system screensaver this never starts over live TV or an app, which matters on TVs whose
          Live TV window does not keep the screen on (CVTE): there the system screensaver would start in the

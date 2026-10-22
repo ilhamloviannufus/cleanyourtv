@@ -1371,31 +1371,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.setVisibility(View.VISIBLE);
         // One stretched bitmap: apply its alpha while drawing instead of through an offscreen buffer.
         heroArt.forceHasOverlappingRendering(false);
-        View scrim = findViewById(R.id.heroScrim);
-        scrim.setBackground(scrimDrawable());
-        scrim.setVisibility(View.VISIBLE);
-    }
-
-    /**
-     * Darkens the side the shelf's text is on and the lower part of the screen, so the name, the dock and
-     * the grid stay readable over the artwork. One small bitmap stretched over the screen, like the glow.
-     */
-    private Drawable scrimDrawable() {
-        int w = 480, h = 270;
-        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-        boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
-        Paint paint = new Paint();
-        paint.setShader(new LinearGradient(rtl ? w : 0, 0, rtl ? 0 : w, 0,
-                new int[]{0xD1060406, 0x59060406, 0x00060406}, new float[]{0f, 0.42f, 0.7f}, Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, w, h, paint);
-        paint.setShader(new LinearGradient(0, 0, 0, h,
-                new int[]{0x00060406, 0x00060406, 0xDB060406, 0xFF060406}, new float[]{0f, 0.28f, 0.58f, 0.76f},
-                Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, w, h, paint);
-        BitmapDrawable scrim = new BitmapDrawable(getResources(), bmp);
-        scrim.setGravity(Gravity.FILL);
-        return scrim;
+        // No scrim: the backdrop photos (config.xml app_backgrounds) are meant to show at full strength,
+        // with no extra colour wash over them; heroScrim stays View.GONE from the layout's own default.
     }
 
     /**

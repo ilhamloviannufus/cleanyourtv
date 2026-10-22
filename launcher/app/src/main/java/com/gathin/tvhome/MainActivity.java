@@ -160,9 +160,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** config.xml league_team: a team name to show a next-match panel for, from TheSportsDB. Empty is off. */
     private String leagueTeam;
     private View leaguePanel;
-    private TextView leagueKicker, leagueHeadline, leagueSubline;
+    private TextView leagueKicker, leagueHeadline, leagueSubline, leagueTable;
     /** The most recent fetch, or null before the first one lands or when there is nothing upcoming. */
     private LeagueMatch leagueMatch;
+    /** Standings around leagueTeam's own rank, or empty before the first fetch lands. */
+    private List<LeagueTable.Row> leagueStandings = Collections.emptyList();
     private final java.util.concurrent.ExecutorService leagueExecutor =
             java.util.concurrent.Executors.newSingleThreadExecutor();
     private boolean leagueFetchInFlight;
@@ -381,6 +383,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         leagueKicker = findViewById(R.id.leagueKicker);
         leagueHeadline = findViewById(R.id.leagueHeadline);
         leagueSubline = findViewById(R.id.leagueSubline);
+        leagueTable = findViewById(R.id.leagueTable);
         showStats = cfg.showStats;
         shamsi = cfg.shamsiDate;
         greetingName = cfg.greetingName;
@@ -1396,10 +1399,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /**
-     * A custom cinematic backdrop for this app (config.xml app_backgrounds), downsampled just enough
-     * for HeroArt's own shrink-and-blur pass; null when none is configured or the file cannot be read.
+     * A custom cinematic backdrop for this app (config.xml app_backgrounds), decoded to cover the screen
+     * the same way a wallpaper is (WallpaperSize): no shrink-and-blur pass, so the photo itself stays
+     * recognisable, only the heroScrim gradient darkens it for the text over it. Null when none is
+     * configured or the file cannot be read.
      */
-    private Drawable customBackdropAt(int position) {
+    private Bitmap customBackdropAt(int position) {
         String pkg = adapter.packageAt(position);
         String filename = pkg == null ? null : appBackgrounds.get(pkg);
         if (filename == null) return null;
@@ -1408,17 +1413,23 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         File file = new File(new File(dir, "backgrounds"), filename);
         if (!file.isFile()) return null;
         try {
+            android.util.DisplayMetrics metrics = getResources().getDisplayMetrics();
+            int screenW = metrics.widthPixels, screenH = metrics.heightPixels;
             BitmapFactory.Options opts = new BitmapFactory.Options();
             opts.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(file.getPath(), opts);
-            int sample = 1;
-            while (opts.outWidth / (sample * 2) >= HeroArt.W * 4 && opts.outHeight / (sample * 2) >= HeroArt.H * 4) {
-                sample *= 2;
-            }
+            int w = opts.outWidth, h = opts.outHeight;
+            if (w <= 0 || h <= 0) return null;
+            int sample = WallpaperSize.sampleSize(w, h, screenW, screenH);
             opts.inJustDecodeBounds = false;
             opts.inSampleSize = sample;
-            Bitmap bmp = BitmapFactory.decodeFile(file.getPath(), opts);
-            return bmp == null ? null : new BitmapDrawable(getResources(), bmp);
+            int[] scale = WallpaperSize.coverScale(w / sample, h / sample, screenW, screenH);
+            if (scale != null) {
+                opts.inScaled = true;
+                opts.inDensity = scale[0];
+                opts.inTargetDensity = scale[1];
+            }
+            return BitmapFactory.decodeFile(file.getPath(), opts);
         } catch (Exception | OutOfMemoryError e) {
             return null;
         }
@@ -1435,7 +1446,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
-            art = HeroArt.from(customBackdropAt(position));
+            art = customBackdropAt(position);
             if (art == null) art = HeroArt.from(adapter.artworkAt(position));
             if (art != null) heroArtCache.put(key, art);
         }
@@ -2044,13 +2055,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private static final String LEAGUE_PREFS = "league";
     private static final String LEAGUE_API = "https://www.thesportsdb.com/api/v1/json/123/";
 
-    /** Shows the cached match (if any) right away, then fetches a fresh one if the cache is stale or missing. */
+    /** Shows the cached match and table (if any) right away, then fetches fresh ones if stale or missing. */
     private void refreshLeague() {
         if (leagueTeam.isEmpty()) return;
         android.content.SharedPreferences prefs = getSharedPreferences(LEAGUE_PREFS, MODE_PRIVATE);
-        if (leagueMatch == null) {
-            String cached = prefs.getString("json:" + leagueTeam, null);
-            if (cached != null) leagueMatch = LeagueMatch.parseNext(cached);
+        if (leagueMatch == null && leagueStandings.isEmpty()) {
+            String cachedMatch = prefs.getString("json:" + leagueTeam, null);
+            if (cachedMatch != null) leagueMatch = LeagueMatch.parseNext(cachedMatch);
+            String cachedTable = prefs.getString("table:" + leagueTeam, null);
+            if (cachedTable != null) leagueStandings = LeagueTable.around(LeagueTable.parse(cachedTable), leagueTeam);
             updateLeaguePanel();
         }
         long last = prefs.getLong("fetched:" + leagueTeam, 0);
@@ -2058,30 +2071,56 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         leagueFetchInFlight = true;
         final String team = leagueTeam;
         leagueExecutor.execute(() -> {
-            String json = fetchLeagueJson(prefs, team);
-            LeagueMatch match = json == null ? null : LeagueMatch.parseNext(json);
+            LeagueFetch fetched = fetchLeagueData(prefs, team);
             handler.post(() -> {
                 leagueFetchInFlight = false;
-                if (match != null) leagueMatch = match;
+                if (fetched != null) {
+                    if (fetched.match != null) leagueMatch = fetched.match;
+                    if (!fetched.standings.isEmpty()) leagueStandings = fetched.standings;
+                }
                 updateLeaguePanel();
             });
         });
     }
 
-    /** Resolves (and caches) the team's id, then fetches its next events as raw JSON. Network thread only. */
-    private String fetchLeagueJson(android.content.SharedPreferences prefs, String team) {
+    private static final class LeagueFetch {
+        final LeagueMatch match;
+        final List<LeagueTable.Row> standings;
+
+        LeagueFetch(LeagueMatch match, List<LeagueTable.Row> standings) {
+            this.match = match;
+            this.standings = standings;
+        }
+    }
+
+    /** Resolves (and caches) the team's id and league id, then fetches its next match and the table. Network thread only. */
+    private LeagueFetch fetchLeagueData(android.content.SharedPreferences prefs, String team) {
         try {
             String id = prefs.getString("id:" + team, null);
-            if (id == null) {
+            String leagueId = prefs.getString("league_id:" + team, null);
+            if (id == null || leagueId == null) {
                 String search = httpGet(LEAGUE_API + "searchteams.php?t=" + java.net.URLEncoder.encode(team, "UTF-8"));
                 id = search == null ? null : LeagueMatch.parseTeamId(search);
+                leagueId = search == null ? null : LeagueMatch.parseTeamLeagueId(search);
                 if (id == null) return null;
-                prefs.edit().putString("id:" + team, id).apply();
+                android.content.SharedPreferences.Editor edit = prefs.edit().putString("id:" + team, id);
+                if (leagueId != null) edit.putString("league_id:" + team, leagueId);
+                edit.apply();
             }
             String events = httpGet(LEAGUE_API + "eventsnext.php?id=" + id);
-            if (events == null) return null;
-            prefs.edit().putString("json:" + team, events).putLong("fetched:" + team, System.currentTimeMillis()).apply();
-            return events;
+            LeagueMatch match = events == null ? null : LeagueMatch.parseNext(events);
+            List<LeagueTable.Row> standings = Collections.emptyList();
+            if (leagueId != null) {
+                String table = httpGet(LEAGUE_API + "lookuptable.php?l=" + leagueId);
+                if (table != null) {
+                    standings = LeagueTable.around(LeagueTable.parse(table), team);
+                    prefs.edit().putString("table:" + team, table).apply();
+                }
+            }
+            if (events != null) {
+                prefs.edit().putString("json:" + team, events).putLong("fetched:" + team, System.currentTimeMillis()).apply();
+            }
+            return new LeagueFetch(match, standings);
         } catch (Exception e) {
             android.util.Log.w("TvHome.League", "fetch failed: " + e.getMessage());
             return null;
@@ -2108,23 +2147,51 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Text only, like updateRace(): nothing animates, so this costs nothing between ticks. */
     private void updateLeaguePanel() {
-        LeagueMatch m = leagueMatch;
-        if (m == null || m.finished()) {
+        LeagueMatch m = leagueMatch != null && !leagueMatch.finished() ? leagueMatch : null;
+        if (m == null && leagueStandings.isEmpty()) {
             leaguePanel.setVisibility(View.GONE);
             return;
         }
-        String league = m.league.isEmpty() ? leagueTeam : m.league;
-        leagueKicker.setText(m.live() ? getString(R.string.league_kicker_live, league)
-                : getString(R.string.league_kicker, league));
-        leagueHeadline.setText(getString(R.string.league_vs, m.homeTeam, m.awayTeam));
-        if (m.live() && m.homeScore != null && m.awayScore != null) {
-            SpannableString live = new SpannableString("●  " + getString(R.string.league_score, m.homeScore, m.awayScore));
-            live.setSpan(new android.text.style.ForegroundColorSpan(RACE_RED), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            leagueSubline.setText(live);
+        String league = m != null && !m.league.isEmpty() ? m.league
+                : leagueStandings.isEmpty() ? leagueTeam : "Liga 1";
+        if (m == null) {
+            leagueKicker.setText(getString(R.string.league_kicker, league));
+            leagueHeadline.setText(leagueTeam);
+            leagueSubline.setText(R.string.league_no_match);
         } else {
-            java.time.Duration until = java.time.Duration.between(java.time.Instant.now(), m.kickoff);
-            leagueSubline.setText(until.isNegative() ? m.venue
-                    : getString(R.string.league_kickoff_in, RaceWeekend.countdown(until)));
+            leagueKicker.setText(m.live() ? getString(R.string.league_kicker_live, league)
+                    : getString(R.string.league_kicker, league));
+            leagueHeadline.setText(getString(R.string.league_vs, m.homeTeam, m.awayTeam));
+            if (m.live() && m.homeScore != null && m.awayScore != null) {
+                SpannableString live = new SpannableString("●  " + getString(R.string.league_score, m.homeScore, m.awayScore));
+                live.setSpan(new android.text.style.ForegroundColorSpan(RACE_RED), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                leagueSubline.setText(live);
+            } else {
+                java.time.Duration until = java.time.Duration.between(java.time.Instant.now(), m.kickoff);
+                leagueSubline.setText(until.isNegative() ? m.venue
+                        : getString(R.string.league_kickoff_in, RaceWeekend.countdown(until)));
+            }
+        }
+        if (leagueStandings.isEmpty()) {
+            leagueTable.setVisibility(View.GONE);
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (LeagueTable.Row row : leagueStandings) {
+                if (sb.length() > 0) sb.append('\n');
+                sb.append(getString(R.string.league_table_row, row.rank, row.team, row.points));
+            }
+            SpannableString table = new SpannableString(sb.toString());
+            int start = 0;
+            for (LeagueTable.Row row : leagueStandings) {
+                int end = start + getString(R.string.league_table_row, row.rank, row.team, row.points).length();
+                if (row.team.equalsIgnoreCase(leagueTeam)) {
+                    table.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    table.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                start = end + 1;
+            }
+            leagueTable.setText(table);
+            leagueTable.setVisibility(View.VISIBLE);
         }
         leaguePanel.setVisibility(View.VISIBLE);
     }

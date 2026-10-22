@@ -97,11 +97,12 @@
     <!-- Next-match panel (LeagueMatch, config.xml league_team), mirrored like racePanel above. -->
     <LinearLayout
         android:id="@+id/leaguePanel"
-        android:layout_width="wrap_content"
+        android:layout_width="280dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|right"
+        android:layout_gravity="right|center_vertical"
         android:layout_marginEnd="60dp"
-        android:layout_marginTop="158dp"
+        android:background="@drawable/glass_panel"
+        android:padding="18dp"
         android:gravity="right"
         android:orientation="vertical"
         android:focusable="false"
@@ -121,7 +122,7 @@
                 android:singleLine="true"
                 android:textColor="#B3FFFFFF"
                 android:textSize="12sp"
-                android:fontFamily="@font/outfit_medium"
+                android:fontFamily="@font/outfit_bold"
                 android:letterSpacing="0.22"
                 android:textAllCaps="true" />
 
@@ -134,13 +135,14 @@
 
         <TextView
             android:id="@+id/leagueHeadline"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:singleLine="true"
+            android:gravity="right"
+            android:maxLines="2"
             android:textColor="#FFFFFFFF"
-            android:textSize="34sp"
-            android:fontFamily="@font/outfit_light"
+            android:textSize="24sp"
+            android:fontFamily="@font/outfit_bold"
             android:letterSpacing="-0.01"
             android:includeFontPadding="false" />
 
@@ -148,12 +150,24 @@
             android:id="@+id/leagueSubline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="10dp"
             android:singleLine="true"
             android:textColor="#99FFFFFF"
             android:textSize="12sp"
             android:fontFamily="@font/outfit_medium"
             android:letterSpacing="0.12" />
+
+        <TextView
+            android:id="@+id/leagueTable"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="right"
+            android:lineSpacingExtra="4dp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="13sp"
+            android:fontFamily="@font/outfit_medium"
+            android:visibility="gone" />
     </LinearLayout>
 
     <!-- Cinematic top shelf: darkens the edge behind the shelf and the lower half, so the text and the
@@ -292,15 +306,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <ImageView
-                        android:id="@+id/accountIcon"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginBottom="6dp"
-                        android:src="@drawable/ic_account"
-                        android:alpha="0.85"
-                        android:importantForAccessibility="no" />
                     <TextView
                         android:id="@+id/greeting"
                         android:gravity="center_horizontal"

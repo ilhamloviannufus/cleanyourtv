@@ -110,4 +110,6 @@
     <string name="league_vs">%1$s נגד %2$s</string>
     <string name="league_score">%1$d–%2$d</string>
     <string name="league_kickoff_in">פתיחה בעוד %1$s</string>
+    <string name="league_no_match">אין משחק קרוב עדיין</string>
+    <string name="league_table_row">%1$d  %2$s  %3$d</string>
 </resources>

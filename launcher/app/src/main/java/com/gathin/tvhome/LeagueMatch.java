@@ -58,16 +58,24 @@ final class LeagueMatch {
         return null;
     }
 
-    /** The first team id in a searchteams.php {"teams":[...]} response, or null. */
+    /** The first team's id, or its league id, from a searchteams.php {"teams":[...]} response; either null. */
     static String parseTeamId(String json) {
+        return parseTeamField(json, "idTeam");
+    }
+
+    static String parseTeamLeagueId(String json) {
+        return parseTeamField(json, "idLeague");
+    }
+
+    private static String parseTeamField(String json, String field) {
         try {
             JSONObject root = new JSONObject(json);
             JSONArray teams = root.optJSONArray("teams");
             if (teams == null || teams.length() == 0) return null;
             JSONObject team = teams.optJSONObject(0);
             if (team == null) return null;
-            String id = team.optString("idTeam", "").trim();
-            return id.isEmpty() ? null : id;
+            String value = team.optString(field, "").trim();
+            return value.isEmpty() ? null : value;
         } catch (Exception ignored) {
             return null;
         }

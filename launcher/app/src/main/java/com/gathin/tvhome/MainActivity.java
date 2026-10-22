@@ -13,6 +13,7 @@ import android.content.IntentFilter;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -134,6 +135,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
     private String heroArtKey;
+    /** Package to a filename in backgrounds/ for the cinematic shelf's backdrop (config.xml, app_backgrounds). */
+    private Map<String, String> appBackgrounds = Collections.emptyMap();
     /** The focus glow's colour while the cinematic shelf tints it, 0 for plain white glass. */
     private int glassAccent;
     private int ambientColor = -1;
@@ -357,6 +360,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroDots = findViewById(R.id.heroDots);
         heroArt = findViewById(R.id.heroArt);
         cinematic = cfg.cinematicHome;
+        appBackgrounds = cfg.appBackgrounds;
         if (cinematic) setUpCinematicShelf();
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
@@ -1391,6 +1395,35 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return scrim;
     }
 
+    /**
+     * A custom cinematic backdrop for this app (config.xml app_backgrounds), downsampled just enough
+     * for HeroArt's own shrink-and-blur pass; null when none is configured or the file cannot be read.
+     */
+    private Drawable customBackdropAt(int position) {
+        String pkg = adapter.packageAt(position);
+        String filename = pkg == null ? null : appBackgrounds.get(pkg);
+        if (filename == null) return null;
+        File dir = Config.dir(this);
+        if (dir == null) return null;
+        File file = new File(new File(dir, "backgrounds"), filename);
+        if (!file.isFile()) return null;
+        try {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(file.getPath(), opts);
+            int sample = 1;
+            while (opts.outWidth / (sample * 2) >= HeroArt.W * 4 && opts.outHeight / (sample * 2) >= HeroArt.H * 4) {
+                sample *= 2;
+            }
+            opts.inJustDecodeBounds = false;
+            opts.inSampleSize = sample;
+            Bitmap bmp = BitmapFactory.decodeFile(file.getPath(), opts);
+            return bmp == null ? null : new BitmapDrawable(getResources(), bmp);
+        } catch (Exception | OutOfMemoryError e) {
+            return null;
+        }
+    }
+
     /** Swaps the backdrop to this app's artwork: fade out, swap, fade in, the way the shelf's name changes. */
     private void showHeroArt(int position) {
         String key = adapter.keyAt(position);
@@ -1402,7 +1435,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
-            art = HeroArt.from(adapter.artworkAt(position));
+            art = HeroArt.from(customBackdropAt(position));
+            if (art == null) art = HeroArt.from(adapter.artworkAt(position));
             if (art != null) heroArtCache.put(key, art);
         }
         heroArtKey = key;

@@ -96,16 +96,18 @@
 
     <!-- Next-match panel (LeagueMatch, config.xml league_team): a team's next fixture, its live score once
          it starts, and the table around its own rank. Fetched at most once every two hours; see
-         MainActivity. Left-centre so it sits over the photo, not the header or the dock; its own kids-card
-         background (card_kids_purple) keeps the text readable over whatever the photo looks like there. -->
+         MainActivity. Sits in the gap between the header and the cinematic shelf's name/dock, so it never
+         covers either; its own kids-card background (card_kids_purple) keeps the text readable over
+         whatever the photo looks like there. -->
     <LinearLayout
         android:id="@+id/leaguePanel"
-        android:layout_width="280dp"
+        android:layout_width="260dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="left|center_vertical"
+        android:layout_gravity="top|left"
         android:layout_marginStart="60dp"
+        android:layout_marginTop="150dp"
         android:background="@drawable/card_kids_purple"
-        android:padding="18dp"
+        android:padding="16dp"
         android:orientation="vertical"
         android:focusable="false"
         android:importantForAccessibility="no"

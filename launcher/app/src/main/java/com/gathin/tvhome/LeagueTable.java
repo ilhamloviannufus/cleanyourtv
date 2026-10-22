@@ -52,16 +52,19 @@ final class LeagueTable {
         return null;
     }
 
+    /** How many rows {@link #around} returns: enough to place the team without crowding the small panel. */
+    static final int ROWS = 3;
+
     /**
-     * Up to five rows centred on the team's own rank (two above, two below); the whole top five when the
-     * team is not found. Always in rank order.
+     * Up to {@link #ROWS} rows centred on the team's own rank (one above, one below); the top rows when
+     * the team is not found. Always in rank order.
      */
     static List<Row> around(List<Row> table, String team) {
         if (table.isEmpty()) return Collections.emptyList();
         Row self = find(table, team);
         int center = self == null ? 0 : table.indexOf(self);
-        int start = Math.max(0, Math.min(center - 2, table.size() - 5));
-        int end = Math.min(table.size(), start + 5);
+        int start = Math.max(0, Math.min(center - 1, table.size() - ROWS));
+        int end = Math.min(table.size(), start + ROWS);
         return table.subList(start, end);
     }
 }

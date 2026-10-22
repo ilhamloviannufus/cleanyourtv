@@ -2132,10 +2132,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String league = m != null && !m.league.isEmpty() ? m.league
                 : leagueStandings.isEmpty() ? leagueTeam : "Liga 1";
         if (m == null) {
-            leagueKicker.setText(getString(R.string.league_kicker, league));
-            leagueHeadline.setText(leagueTeam);
+            // No fixture: the team name already sits in the kicker, so the headline stays out of the way
+            // and the panel is only as tall as the table needs.
+            leagueKicker.setText(getString(R.string.league_kicker, leagueTeam));
+            leagueHeadline.setVisibility(View.GONE);
             leagueSubline.setText(R.string.league_no_match);
         } else {
+            leagueHeadline.setVisibility(View.VISIBLE);
             leagueKicker.setText(m.live() ? getString(R.string.league_kicker_live, league)
                     : getString(R.string.league_kicker, league));
             leagueHeadline.setText(getString(R.string.league_vs, m.homeTeam, m.awayTeam));

@@ -105,9 +105,9 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top|left"
         android:layout_marginStart="60dp"
-        android:layout_marginTop="150dp"
+        android:layout_marginTop="120dp"
         android:background="@drawable/card_kids_purple"
-        android:padding="16dp"
+        android:padding="12dp"
         android:orientation="vertical"
         android:focusable="false"
         android:importantForAccessibility="no"
@@ -121,8 +121,8 @@
 
             <View
                 android:layout_width="3dp"
-                android:layout_height="13dp"
-                android:layout_marginEnd="10dp"
+                android:layout_height="11dp"
+                android:layout_marginEnd="8dp"
                 android:background="@drawable/race_bar" />
 
             <TextView
@@ -130,10 +130,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
-                android:textColor="#B3FFFFFF"
-                android:textSize="12sp"
+                android:textColor="#CCFFFFFF"
+                android:textSize="11sp"
                 android:fontFamily="@font/outfit_bold"
-                android:letterSpacing="0.22"
+                android:letterSpacing="0.18"
                 android:textAllCaps="true" />
         </LinearLayout>
 
@@ -141,10 +141,11 @@
             android:id="@+id/leagueHeadline"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:maxLines="2"
+            android:layout_marginTop="4dp"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:textColor="#FFFFFFFF"
-            android:textSize="24sp"
+            android:textSize="17sp"
             android:fontFamily="@font/outfit_bold"
             android:letterSpacing="-0.01"
             android:includeFontPadding="false" />
@@ -153,21 +154,21 @@
             android:id="@+id/leagueSubline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="4dp"
             android:singleLine="true"
-            android:textColor="#99FFFFFF"
-            android:textSize="12sp"
+            android:textColor="#B3FFFFFF"
+            android:textSize="11sp"
             android:fontFamily="@font/outfit_medium"
-            android:letterSpacing="0.12" />
+            android:letterSpacing="0.1" />
 
         <TextView
             android:id="@+id/leagueTable"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:lineSpacingExtra="4dp"
-            android:textColor="#B3FFFFFF"
-            android:textSize="13sp"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="2dp"
+            android:textColor="#CCFFFFFF"
+            android:textSize="12sp"
             android:fontFamily="@font/outfit_medium"
             android:visibility="gone" />
     </LinearLayout>
